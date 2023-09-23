@@ -850,7 +850,7 @@ class LcdMenu {
         update();
     }
 
-    MenuItem *getCurrentMenuTable() {
-        return *currentMenuTable;
+    MenuItem **getCurrentMenuTable() {
+        return currentMenuTable;
     }
 };
