@@ -849,4 +849,8 @@ class LcdMenu {
         backlightState = state;
         update();
     }
+
+    MenuItem *getCurrentMenuTable() {
+        return *currentMenuTable;
+    }
 };
