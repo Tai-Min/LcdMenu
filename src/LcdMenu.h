@@ -175,6 +175,12 @@ class LcdMenu {
         //
         for (uint8_t i = top; i <= bottom; i++) {
             MenuItem* item = currentMenuTable[i];
+
+            if (item->isHidden())
+            {
+                continue;
+            }
+
             lcd->setCursor(1, map(i, top, bottom, 0, maxRows - 1));
             if (currentMenuTable[i]->getType() != MENU_ITEM_END_OF_MENU) {
                 lcd->print(item->getText());
@@ -405,8 +411,13 @@ class LcdMenu {
         //
         // determine if cursor ia at start of menu items
         //
-        if (isAtTheStart() || isEditModeEnabled) return;
-        cursorPosition--;
+        do
+        {
+            if (isAtTheStart() || isEditModeEnabled) return;
+            cursorPosition--;
+        }
+        while(currentMenuTable[cursorPosition]->isHidden());
+
         //
         // determine if cursor is at the top of the screen
         //
@@ -427,8 +438,13 @@ class LcdMenu {
         //
         // determine if cursor has passed the end
         //
-        if (isAtTheEnd() || isEditModeEnabled) return;
-        cursorPosition++;
+        do
+        {
+            if (isAtTheEnd() || isEditModeEnabled) return;
+            cursorPosition++;
+        }
+        while(currentMenuTable[cursorPosition]->isHidden());
+
         //
         // determine if cursor is at the bottom of the screen
         //

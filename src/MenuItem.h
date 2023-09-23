@@ -36,6 +36,7 @@ class MenuItem {
    protected:
     const char* text = NULL;
     byte type = MENU_ITEM_NONE;
+    bool hidden = false;
 
    public:
     MenuItem(const char* text) : text(text) {}
@@ -149,6 +150,10 @@ class MenuItem {
      * @param index for the item
      */
     MenuItem& operator[](const uint8_t index);
+
+    bool isHidden() const { return hidden; }
+    void hide() { hidden = true; }
+    void show() { hidden = false; }
 };
 #define ITEM_BASIC(...) (new MenuItem(__VA_ARGS__))
 
