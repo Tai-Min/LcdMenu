@@ -84,6 +84,8 @@ class LcdMenu {
      * Array of menu items
      */
     MenuItem** currentMenuTable = NULL;
+    size_t currentMenuSize = 0;
+
     /**
      * Down arrow (↓)
      */
@@ -134,6 +136,98 @@ class LcdMenu {
      */
 
     /**
+     * Check if items all above the cursor are hidden.
+     * @param cursor cursor to use for check
+     * @return 'bool' - true if all items above cursor are hidden
+     * in current menu / submenu
+    */
+    bool checkAllAboveHidden(uint8_t cursor)
+    {
+        for(size_t i = cursor - 1; i > 0; i--)
+        {
+            if(!currentMenuTable[i]->isHidden())
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check if items all below the cursor are hidden.
+     * @param cursor cursor to use for check
+     * @return 'bool' - true if all items below cursor are hidden
+     * in current menu / submenu
+    */
+    bool checkAllBelowHidden(uint8_t cursor)
+    {
+        for(size_t i = cursor + 1; i < currentMenuSize - 1; i++)
+        {
+            if(!currentMenuTable[i]->isHidden())
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Count non hidden items above given cursor.
+     * @param cursor cursor to use for check
+     * @return 'uint8_t' - Number of non hidden items above cursor
+     * in current menu / submenu
+    */
+    uint8_t countNonHiddenAbove(uint8_t cursor)
+    {
+        uint8_t res = 0;
+        for(size_t i = cursor - 1; i > 0; i--)
+        {
+            if(!currentMenuTable[i]->isHidden())
+            {
+                res++;
+            }
+        }
+        return res;
+    }
+
+    /**
+     * Count non hidden items below given cursor.
+     * @param cursor cursor to use for check
+     * @return 'uint8_t' - Number of non hidden items below cursor 
+     * in current menu / submenu
+    */
+    uint8_t countNonHiddenBelow(uint8_t cursor)
+    {
+        uint8_t res = 0;
+        for(size_t i = cursor + 1; i < currentMenuSize - 1; i++)
+        {
+            if(!currentMenuTable[i]->isHidden())
+            {
+                res++;
+            }
+        }
+        return res;
+    }
+
+    /**
+     * Count non hidden items.
+     * @return 'uint8_t' - Number of non hidden items in current menu / submenu
+    */
+    uint8_t countNonHiddenItems()
+    {
+        size_t idx = 1;
+        size_t res = 0;
+        while(currentMenuTable[idx]->getType() != MENU_ITEM_END_OF_MENU)
+        {
+            if(!currentMenuTable[idx++]->isHidden())
+            {
+                res++;
+            }
+        }
+        return res;
+    }
+
+    /**
      * Draws the cursor
      */
     void drawCursor() {
@@ -148,6 +242,13 @@ class LcdMenu {
         // draws a new cursor at [line]
         //
         uint8_t line = constrain(cursorPosition - top, 0, maxRows - 1);
+
+        // TODO: for LCDs with more rows than 2?
+        if (checkAllAboveHidden(cursorPosition) && line)
+        {
+            line = 0;
+        }
+
         lcd->setCursor(0, line);
         lcd->write(isEditModeEnabled ? editCursorIcon : cursorIcon);
 #ifdef ItemInput_H
@@ -173,16 +274,25 @@ class LcdMenu {
         //
         // print the menu items
         //
+        uint8_t t = top;
+        uint8_t firstDrawnItemIdx = 255;
         for (uint8_t i = top; i <= bottom; i++) {
-            MenuItem* item = currentMenuTable[i];
+            MenuItem* item = currentMenuTable[t];
 
-            if (item->isHidden())
+            while (item->isHidden())
             {
-                continue;
+                t++;
+                item = currentMenuTable[t];
             }
 
+            if(firstDrawnItemIdx == 255)
+            {
+                firstDrawnItemIdx = t;
+            }
+            
+
             lcd->setCursor(1, map(i, top, bottom, 0, maxRows - 1));
-            if (currentMenuTable[i]->getType() != MENU_ITEM_END_OF_MENU) {
+            if (currentMenuTable[t]->getType() != MENU_ITEM_END_OF_MENU) {
                 lcd->print(item->getText());
             }
             //
@@ -226,58 +336,85 @@ class LcdMenu {
                     break;
             }
             // if we reached the end of menu, stop
-            if (currentMenuTable[i]->getType() == MENU_ITEM_END_OF_MENU) break;
+            if (currentMenuTable[t]->getType() == MENU_ITEM_END_OF_MENU) break;
+
+            t++;
         }
-        //
-        // determine if cursor is at the top
-        //
-        if (top == 1) {
-            //
-            // Print the down arrow only
-            //
-            lcd->setCursor(maxCols - 1, maxRows - 1);
-            lcd->write(byte(1));
-        } else if (!isAtTheStart() && !isAtTheEnd()) {
-            //
-            // Print the down arrow
-            //
-            lcd->setCursor(maxCols - 1, maxRows - 1);
-            lcd->write(byte(1));
-            //
-            // Print the up arrow
-            //
+
+        // All entries fit the LCD so no arrows needed
+        uint8_t nonHidden = countNonHiddenItems();
+        if (nonHidden <= maxRows)
+        {
+            return;
+        }
+
+        uint8_t cursorLine = constrain(cursorPosition - top, 0, maxRows - 1);
+        
+        // TODO: for LCDs with more rows than 2?
+        if (checkAllAboveHidden(cursorPosition) && cursorLine)
+        {
+            cursorLine = 0;
+        }
+
+        // Print up arrow
+        if((cursorLine == 0 && !checkAllAboveHidden(firstDrawnItemIdx) && cursorPosition > 1) ||
+           (cursorLine != 0 && countNonHiddenAbove(firstDrawnItemIdx)))
+        {
             lcd->setCursor(maxCols - 1, 0);
             lcd->write(byte(0));
-        } else if (isAtTheEnd()) {
-            //
-            // Print the up arrow only
-            //
-            lcd->setCursor(maxCols - 1, 0);
-            lcd->write(byte(0));
+        }
+
+        // Print down arrow
+        uint8_t lastDrawnItemIdx = t - 1;
+        if ((countNonHiddenBelow(lastDrawnItemIdx))) 
+        {
+            lcd->setCursor(maxCols - 1, maxRows - 1);
+            lcd->write(byte(1));
         }
     }
+
     /**
      * Check if the cursor is at the start of the menu items
-     * @return true : `boolean` if it is at the start
+     * @return true : `bool` if it is at the start
      */
-    boolean isAtTheStart() {
-        byte menuType = currentMenuTable[cursorPosition - 1]->getType();
-        return menuType == MENU_ITEM_MAIN_MENU_HEADER ||
-               menuType == MENU_ITEM_SUB_MENU_HEADER;
+    bool isAtTheStart() {
+        for(size_t i = cursorPosition - 1; i >= 0; i--)
+        {
+            if(!currentMenuTable[i]->isHidden())
+            {
+                if (i == 0)
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+        return true;
     }
     /**
      * Check if the cursor is at the end of the menu items
-     * @return true : `boolean` if it is at the end
+     * @return true : `bool` if it is at the end
      */
-    boolean isAtTheEnd() {
-        return currentMenuTable[cursorPosition + 1]->getType() ==
-               MENU_ITEM_END_OF_MENU;
+    bool isAtTheEnd() {
+        for(size_t i = cursorPosition + 1; i < currentMenuSize; i++)
+        {
+            if(!currentMenuTable[i]->isHidden())
+            {
+                if (i == currentMenuSize - 1)
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+        return true;
     }
+    
     /**
      * Reset the display
      * @param isHistoryAvailable indicates if there is a previous position
      */
-    void reset(boolean isHistoryAvailable) {
+    void reset(bool isHistoryAvailable) {
         if (isHistoryAvailable) {
             cursorPosition = previousCursorPosition;
             top = previousTop;
@@ -373,6 +510,7 @@ class LcdMenu {
         lcd->createChar(0, upArrow);
         lcd->createChar(1, downArrow);
         this->currentMenuTable = menu;
+        this->currentMenuSize = getMenuSize(currentMenuTable);
         this->startTime = millis();
         update();
     }
@@ -409,14 +547,19 @@ class LcdMenu {
      */
     void up() {
         //
-        // determine if cursor ia at start of menu items
+        // determine if cursor is at start of menu items
         //
-        do
-        {
-            if (isAtTheStart() || isEditModeEnabled) return;
+        int8_t numSkipped = -1;
+        do {
+            if (isAtTheStart() || isEditModeEnabled)
+            {
+                //update();
+                return;
+            } 
+
             cursorPosition--;
-        }
-        while(currentMenuTable[cursorPosition]->isHidden());
+            numSkipped++;
+        } while(currentMenuTable[cursorPosition]->isHidden());
 
         //
         // determine if cursor is at the top of the screen
@@ -426,7 +569,9 @@ class LcdMenu {
             // scroll up once
             //
             top--;
+            top += numSkipped;
             bottom--;
+            bottom += numSkipped;
         }
         update();
     }
@@ -438,13 +583,19 @@ class LcdMenu {
         //
         // determine if cursor has passed the end
         //
-        do
-        {
-            if (isAtTheEnd() || isEditModeEnabled) return;
-            cursorPosition++;
-        }
-        while(currentMenuTable[cursorPosition]->isHidden());
+        int8_t numSkipped = -1;
+        do {
+            if (isAtTheEnd() || isEditModeEnabled)
+            {
+                //update();
+                return;
+            } 
 
+            cursorPosition++;
+            numSkipped++;
+        } while(currentMenuTable[cursorPosition]->isHidden());
+
+        
         //
         // determine if cursor is at the bottom of the screen
         //
@@ -453,7 +604,9 @@ class LcdMenu {
             // scroll down once
             //
             top++;
+            top -= numSkipped;
             bottom++;
+            bottom -= numSkipped;
         }
         update();
     }
@@ -467,7 +620,15 @@ class LcdMenu {
      * - Toggle the state of an item.
      */
     void enter() {
-        MenuItem* item = currentMenuTable[cursorPosition];
+        size_t pos = cursorPosition;
+        MenuItem* item = currentMenuTable[pos];
+
+        /*while(item->isHidden())
+        {
+            pos++;
+            item = currentMenuTable[pos];
+        }*/
+
         //
         // determine the type of menu entry, then execute it
         //
@@ -481,6 +642,7 @@ class LcdMenu {
                 //
                 if (item->getSubMenu() == NULL) return;
                 currentMenuTable = item->getSubMenu();
+                currentMenuSize = getMenuSize(currentMenuTable);
                 //
                 // display the sub menu
                 //
@@ -589,6 +751,7 @@ class LcdMenu {
         //
         if (isSubMenu()) {
             currentMenuTable = currentMenuTable[0]->getSubMenu();
+            currentMenuSize = getMenuSize(currentMenuTable);
             reset(true);
         }
     }
@@ -841,6 +1004,19 @@ class LcdMenu {
         byte menuItemType = currentMenuTable[0]->getType();
         return menuItemType == MENU_ITEM_SUB_MENU_HEADER;
     }
+
+    size_t getMenuSize(MenuItem **menu)
+    {
+        size_t s = 0;
+
+        while(menu[s]->getType() != MENU_ITEM_END_OF_MENU)
+        {
+            s++;
+        }
+        s++;
+        return s;
+    }
+
     /**
      * Get a `MenuItem` at position
      * @return `MenuItem` - item at `position`
@@ -864,9 +1040,5 @@ class LcdMenu {
     void setBacklight(uint8_t state) {
         backlightState = state;
         update();
-    }
-
-    MenuItem **getCurrentMenuTable() {
-        return currentMenuTable;
     }
 };
