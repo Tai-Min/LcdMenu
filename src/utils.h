@@ -13,4 +13,6 @@ void remove(char* str, uint8_t index, uint8_t count);
 
 long mapProgress(uint16_t progress, long minValue, long maxValue);
 
+uint16_t toProgress(uint16_t val, long minValue, long maxValue);
+
 float mapProgress(uint16_t progress, float minValue, float maxValue);

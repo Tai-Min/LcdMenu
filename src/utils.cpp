@@ -41,6 +41,10 @@ long mapProgress(uint16_t progress, long minValue, long maxValue) {
     return map(progress, MIN_PROGRESS, MAX_PROGRESS, minValue, maxValue);
 }
 
+uint16_t toProgress(uint16_t val, long minValue, long maxValue) {
+    return map(val, minValue, maxValue, MIN_PROGRESS, MAX_PROGRESS);
+}
+
 float mapProgress(uint16_t progress, float minValue, float maxValue) {
     // Normalize the progress value and map it to the specified floating-point
     // range

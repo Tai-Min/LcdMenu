@@ -38,8 +38,9 @@
  * The LcdMenu class contains all fields and methods to manipulate the menu
  * items.
  */
-class LcdMenu {
-   private:
+class LcdMenu
+{
+private:
     /**
      * ## Private Fields
      */
@@ -48,12 +49,10 @@ class LcdMenu {
      * Cursor position
      */
     uint8_t cursorPosition = 1;
-    uint8_t previousCursorPosition = 1;
     /**
      * First visible item's position in the menu array
      */
     uint8_t top = 1;
-    uint8_t previousTop = 1;
     /**
      * Edit mode
      */
@@ -67,7 +66,6 @@ class LcdMenu {
      * Last visible item's position in the menu array
      */
     uint8_t bottom = 0;
-    uint8_t previousBottom = 0;
     /**
      * Rows on the LCD Display
      */
@@ -83,34 +81,36 @@ class LcdMenu {
     /**
      * Array of menu items
      */
-    MenuItem** currentMenuTable = NULL;
+    MenuItem **currentMenuTable = NULL;
+    /**
+     * Number of menu items in current menu
+     */
     size_t currentMenuSize = 0;
-
     /**
      * Down arrow (↓)
      */
     byte downArrow[8] = {
-        0b00100,  //   *
-        0b00100,  //   *
-        0b00100,  //   *
-        0b00100,  //   *
-        0b00100,  //   *
-        0b10101,  // * * *
-        0b01110,  //  ***
-        0b00100   //   *
+        0b00100, //   *
+        0b00100, //   *
+        0b00100, //   *
+        0b00100, //   *
+        0b00100, //   *
+        0b10101, // * * *
+        0b01110, //  ***
+        0b00100  //   *
     };
     /**
      * Up arrow (↑)
      */
     byte upArrow[8] = {
-        0b00100,  //   *
-        0b01110,  //  ***
-        0b10101,  // * * *
-        0b00100,  //   *
-        0b00100,  //   *
-        0b00100,  //   *
-        0b00100,  //   *
-        0b00100   //   *
+        0b00100, //   *
+        0b01110, //  ***
+        0b10101, // * * *
+        0b00100, //   *
+        0b00100, //   *
+        0b00100, //   *
+        0b00100, //   *
+        0b00100  //   *
     };
     /**
      * Cursor icon. Defaults to right arrow (→).
@@ -137,15 +137,16 @@ class LcdMenu {
 
     /**
      * Check if items all above the cursor are hidden.
+     * Header is ignored in this check.
      * @param cursor cursor to use for check
      * @return 'bool' - true if all items above cursor are hidden
      * in current menu / submenu
-    */
+     */
     bool checkAllAboveHidden(uint8_t cursor)
     {
-        for(size_t i = cursor - 1; i > 0; i--)
+        for (size_t i = cursor - 1; i > 0; i--)
         {
-            if(!currentMenuTable[i]->isHidden())
+            if (!currentMenuTable[i]->isHidden())
             {
                 return false;
             }
@@ -155,15 +156,16 @@ class LcdMenu {
 
     /**
      * Check if items all below the cursor are hidden.
+     * Footer is ignored in this check.
      * @param cursor cursor to use for check
      * @return 'bool' - true if all items below cursor are hidden
      * in current menu / submenu
-    */
+     */
     bool checkAllBelowHidden(uint8_t cursor)
     {
-        for(size_t i = cursor + 1; i < currentMenuSize - 1; i++)
+        for (size_t i = cursor + 1; i < currentMenuSize - 2; i++)
         {
-            if(!currentMenuTable[i]->isHidden())
+            if (!currentMenuTable[i]->isHidden())
             {
                 return false;
             }
@@ -176,13 +178,13 @@ class LcdMenu {
      * @param cursor cursor to use for check
      * @return 'uint8_t' - Number of non hidden items above cursor
      * in current menu / submenu
-    */
+     */
     uint8_t countNonHiddenAbove(uint8_t cursor)
     {
         uint8_t res = 0;
-        for(size_t i = cursor - 1; i > 0; i--)
+        for (size_t i = cursor - 1; i > 0; i--)
         {
-            if(!currentMenuTable[i]->isHidden())
+            if (!currentMenuTable[i]->isHidden())
             {
                 res++;
             }
@@ -193,15 +195,15 @@ class LcdMenu {
     /**
      * Count non hidden items below given cursor.
      * @param cursor cursor to use for check
-     * @return 'uint8_t' - Number of non hidden items below cursor 
+     * @return 'uint8_t' - Number of non hidden items below cursor
      * in current menu / submenu
-    */
+     */
     uint8_t countNonHiddenBelow(uint8_t cursor)
     {
         uint8_t res = 0;
-        for(size_t i = cursor + 1; i < currentMenuSize - 1; i++)
+        for (size_t i = cursor + 1; i < currentMenuSize - 2; i++)
         {
-            if(!currentMenuTable[i]->isHidden())
+            if (!currentMenuTable[i]->isHidden())
             {
                 res++;
             }
@@ -212,14 +214,14 @@ class LcdMenu {
     /**
      * Count non hidden items.
      * @return 'uint8_t' - Number of non hidden items in current menu / submenu
-    */
+     */
     uint8_t countNonHiddenItems()
     {
         size_t idx = 1;
         size_t res = 0;
-        while(currentMenuTable[idx]->getType() != MENU_ITEM_END_OF_MENU)
+        while (currentMenuTable[idx]->getType() != MENU_ITEM_END_OF_MENU)
         {
-            if(!currentMenuTable[idx++]->isHidden())
+            if (!currentMenuTable[idx++]->isHidden())
             {
                 res++;
             }
@@ -230,11 +232,13 @@ class LcdMenu {
     /**
      * Draws the cursor
      */
-    void drawCursor() {
+    void drawCursor()
+    {
         //
         // Erases current cursor
         //
-        for (uint8_t x = 0; x < maxRows; x++) {
+        for (uint8_t x = 0; x < maxRows; x++)
+        {
             lcd->setCursor(0, x);
             lcd->print(" ");
         }
@@ -244,7 +248,7 @@ class LcdMenu {
         uint8_t line = constrain(cursorPosition - top, 0, maxRows - 1);
 
         // TODO: for LCDs with more rows than 2?
-        if (checkAllAboveHidden(cursorPosition) && line)
+        if (checkAllAboveHidden(cursorPosition))
         {
             line = 0;
         }
@@ -255,10 +259,12 @@ class LcdMenu {
         //
         // If cursor is at MENU_ITEM_INPUT enable blinking
         //
-        MenuItem* item = currentMenuTable[cursorPosition];
-        if (item->getType() == MENU_ITEM_INPUT) {
+        MenuItem *item = currentMenuTable[cursorPosition];
+        if (item->getType() == MENU_ITEM_INPUT)
+        {
             resetBlinker();
-            if (isEditModeEnabled) {
+            if (isEditModeEnabled)
+            {
                 lcd->blink();
                 return;
             }
@@ -269,15 +275,17 @@ class LcdMenu {
     /**
      * Draw the menu items with up and down indicators
      */
-    void drawMenu() {
+    void drawMenu()
+    {
         lcd->clear();
         //
         // print the menu items
         //
         uint8_t t = top;
         uint8_t firstDrawnItemIdx = 255;
-        for (uint8_t i = top; i <= bottom; i++) {
-            MenuItem* item = currentMenuTable[t];
+        for (uint8_t i = top; i <= bottom; i++)
+        {
+            MenuItem *item = currentMenuTable[t];
 
             while (item->isHidden())
             {
@@ -285,60 +293,67 @@ class LcdMenu {
                 item = currentMenuTable[t];
             }
 
-            if(firstDrawnItemIdx == 255)
+            if (firstDrawnItemIdx == 255)
             {
                 firstDrawnItemIdx = t;
             }
-            
 
             lcd->setCursor(1, map(i, top, bottom, 0, maxRows - 1));
-            if (currentMenuTable[t]->getType() != MENU_ITEM_END_OF_MENU) {
+            if (currentMenuTable[t]->getType() != MENU_ITEM_END_OF_MENU)
+            {
                 lcd->print(item->getText());
             }
             //
             // determine the type of item
             //
-            switch (item->getType()) {
+            switch (item->getType())
+            {
 #ifdef ItemToggle_H
-                case MENU_ITEM_TOGGLE:
-                    //
-                    // append textOn or textOff depending on the state
-                    //
-                    lcd->print(":");
-                    lcd->print(item->isOn() ? item->getTextOn()
-                                            : item->getTextOff());
-                    break;
+            case MENU_ITEM_TOGGLE:
+                //
+                // append textOn or textOff depending on the state
+                //
+                lcd->print(":");
+                lcd->print(item->isOn() ? item->getTextOn()
+                                        : item->getTextOff());
+                break;
 #endif
 #if defined(ItemProgress_H) || defined(ItemInput_H)
-                case MENU_ITEM_INPUT:
-                case MENU_ITEM_PROGRESS:
-                    //
-                    // append the value of the input
-                    //
-                    static char* buf = new char[maxCols];
-                    substring(item->getValue(), 0,
-                              maxCols - strlen(item->getText()) - 2, buf);
-                    lcd->print(":");
-                    lcd->print(buf);
-                    break;
+            case MENU_ITEM_INPUT:
+            case MENU_ITEM_PROGRESS:
+                //
+                // append the value of the input
+                //
+                static char *buf = new char[maxCols];
+                substring(item->getValue(), 0,
+                          maxCols - strlen(item->getText()) - 2, buf);
+                lcd->print(":");
+                lcd->print(buf);
+                break;
 #endif
 #ifdef ItemList_H
-                case MENU_ITEM_LIST:
-                    //
-                    // append the value of the item at current list position
-                    //
-                    lcd->print(":");
-                    lcd->print(item->getItems()[item->getItemIndex()].substring(
-                        0, maxCols - strlen(item->getText()) - 2));
-                    break;
+            case MENU_ITEM_LIST:
+                //
+                // append the value of the item at current list position
+                //
+                lcd->print(":");
+                lcd->print(item->getItems()[item->getItemIndex()].substring(
+                    0, maxCols - strlen(item->getText()) - 2));
+                break;
 #endif
-                default:
-                    break;
+            default:
+                break;
             }
             // if we reached the end of menu, stop
-            if (currentMenuTable[t]->getType() == MENU_ITEM_END_OF_MENU) break;
+            if (currentMenuTable[t]->getType() == MENU_ITEM_END_OF_MENU)
+                break;
 
             t++;
+        }
+
+        if (isEditModeEnabled)
+        {
+            return;
         }
 
         // All entries fit the LCD so no arrows needed
@@ -349,7 +364,7 @@ class LcdMenu {
         }
 
         uint8_t cursorLine = constrain(cursorPosition - top, 0, maxRows - 1);
-        
+
         // TODO: for LCDs with more rows than 2?
         if (checkAllAboveHidden(cursorPosition) && cursorLine)
         {
@@ -357,8 +372,8 @@ class LcdMenu {
         }
 
         // Print up arrow
-        if((cursorLine == 0 && !checkAllAboveHidden(firstDrawnItemIdx) && cursorPosition > 1) ||
-           (cursorLine != 0 && countNonHiddenAbove(firstDrawnItemIdx)))
+        if ((cursorLine == 0 && !checkAllAboveHidden(firstDrawnItemIdx) && cursorPosition > 1) ||
+            (cursorLine != 0 && countNonHiddenAbove(firstDrawnItemIdx)))
         {
             lcd->setCursor(maxCols - 1, 0);
             lcd->write(byte(0));
@@ -366,7 +381,7 @@ class LcdMenu {
 
         // Print down arrow
         uint8_t lastDrawnItemIdx = t - 1;
-        if ((countNonHiddenBelow(lastDrawnItemIdx))) 
+        if ((countNonHiddenBelow(lastDrawnItemIdx)))
         {
             lcd->setCursor(maxCols - 1, maxRows - 1);
             lcd->write(byte(1));
@@ -377,10 +392,11 @@ class LcdMenu {
      * Check if the cursor is at the start of the menu items
      * @return true : `bool` if it is at the start
      */
-    bool isAtTheStart() {
-        for(size_t i = cursorPosition - 1; i >= 0; i--)
+    bool isAtTheStart()
+    {
+        for (size_t i = cursorPosition - 1; i >= 0; i--)
         {
-            if(!currentMenuTable[i]->isHidden())
+            if (!currentMenuTable[i]->isHidden())
             {
                 if (i == 0)
                 {
@@ -391,14 +407,16 @@ class LcdMenu {
         }
         return true;
     }
+
     /**
      * Check if the cursor is at the end of the menu items
      * @return true : `bool` if it is at the end
      */
-    bool isAtTheEnd() {
-        for(size_t i = cursorPosition + 1; i < currentMenuSize; i++)
+    bool isAtTheEnd()
+    {
+        for (size_t i = cursorPosition + 1; i < currentMenuSize; i++)
         {
-            if(!currentMenuTable[i]->isHidden())
+            if (!currentMenuTable[i]->isHidden())
             {
                 if (i == currentMenuSize - 1)
                 {
@@ -409,32 +427,47 @@ class LcdMenu {
         }
         return true;
     }
-    
-    /**
-     * Reset the display
-     * @param isHistoryAvailable indicates if there is a previous position
-     */
-    void reset(bool isHistoryAvailable) {
-        if (isHistoryAvailable) {
-            cursorPosition = previousCursorPosition;
-            top = previousTop;
-            bottom = previousBottom;
-        } else {
-            previousCursorPosition = cursorPosition;
-            previousTop = top;
-            previousBottom = bottom;
 
-            cursorPosition = 1;
-            top = 1;
-            bottom = maxRows;
-        }
+    void enterSubMenu(MenuItem *item)
+    {
+        if (item->getSubMenu() == NULL)
+            return;
+
+        currentMenuTable[0]->setTop(top);
+        currentMenuTable[0]->setBottom(bottom);
+        currentMenuTable[0]->setCursorPosition(cursorPosition);
+
+        top = 1;
+        bottom = maxRows;
+        cursorPosition = 1;
+
+        currentMenuTable = item->getSubMenu();
+        currentMenuSize = getMenuSize(currentMenuTable);
+
         update();
     }
+
+    void leaveSubMenu(MenuItem *item)
+    {
+        if (item->getSubMenu() == NULL)
+            return;
+
+        currentMenuTable = item->getSubMenu();
+        currentMenuSize = getMenuSize(currentMenuTable);
+
+        top = currentMenuTable[0]->getTop();
+        bottom = currentMenuTable[0]->getBottom();
+        cursorPosition = currentMenuTable[0]->getCursorPosition();
+
+        update();
+    }
+
 #ifdef ItemInput_H
     /**
      * Calculate and set the new blinker position
      */
-    void resetBlinker() {
+    void resetBlinker()
+    {
         //
         // calculate lower and upper bound
         //
@@ -449,7 +482,7 @@ class LcdMenu {
     }
 #endif
 
-   public:
+public:
     /**
      * ## Public Fields
      */
@@ -466,9 +499,9 @@ class LcdMenu {
      * LCD Display
      */
 #ifndef USE_STANDARD_LCD
-    LiquidCrystal_I2C* lcd = NULL;
+    LiquidCrystal_I2C *lcd = NULL;
 #else
-    LiquidCrystal* lcd = NULL;
+    LiquidCrystal *lcd = NULL;
 #endif
 
     /**
@@ -496,13 +529,15 @@ class LcdMenu {
      */
     void setupLcdWithMenu(
 #ifndef USE_STANDARD_LCD
-        uint8_t lcd_Addr, MenuItem** menu) {
+        uint8_t lcd_Addr, MenuItem **menu)
+    {
         lcd = new LiquidCrystal_I2C(lcd_Addr, maxCols, maxRows);
         lcd->init();
         lcd->backlight();
 #else
         uint8_t rs, uint8_t en, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3,
-        MenuItem** menu) {
+        MenuItem **menu)
+    {
         this->lcd = new LiquidCrystal(rs, en, d0, d1, d2, d3);
         this->lcd->begin(maxCols, maxRows);
 #endif
@@ -517,11 +552,13 @@ class LcdMenu {
 
     void setupLcdWithMenu(
 #ifndef USE_STANDARD_LCD
-        uint8_t lcd_Addr, MenuItem** menu, uint16_t timeout) {
+        uint8_t lcd_Addr, MenuItem **menu, uint16_t timeout)
+    {
         this->setupLcdWithMenu(lcd_Addr, menu);
 #else
         uint8_t rs, uint8_t en, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3,
-        MenuItem** menu, uint16_t timeout) {
+        MenuItem **menu, uint16_t timeout)
+    {
         this->setupLcdWithMenu(rs, en, d0, d1, d2, d3, menu);
 #endif
         this->timeout = timeout;
@@ -529,87 +566,93 @@ class LcdMenu {
     /*
      * Draw the menu items and cursor
      */
-    void update() {
-        if (!enableUpdate) return;
+    void update()
+    {
+        if (!enableUpdate)
+            return;
         lcd->display();
         lcd->setBacklight(backlightState);
         drawMenu();
         drawCursor();
         startTime = millis();
     }
-    /**
-     * Reset the display
-     */
-    void resetMenu() { this->reset(false); }
+
     /**
      * Execute an "up press" on menu
      * When edit mode is enabled, this action is skipped
+     * @return 'bool' True if up action performed
      */
-    void up() {
-        //
-        // determine if cursor is at start of menu items
-        //
-        int8_t numSkipped = -1;
-        do {
+    bool up()
+    {
+        uint8_t cursorLine = constrain(cursorPosition - top, 0, maxRows - 1);
+        if (checkAllAboveHidden(cursorPosition))
+        {
+            cursorLine = 0;
+        }
+        bool wasAtTop = cursorLine == 0;
+
+        int8_t numSkipped = 1;
+        do
+        {
             if (isAtTheStart() || isEditModeEnabled)
             {
-                //update();
-                return;
-            } 
-
+                return false;
+            }
             cursorPosition--;
             numSkipped++;
-        } while(currentMenuTable[cursorPosition]->isHidden());
+        } while (currentMenuTable[cursorPosition]->isHidden());
 
-        //
-        // determine if cursor is at the top of the screen
-        //
-        if (cursorPosition < top) {
-            //
-            // scroll up once
-            //
-            top--;
-            top += numSkipped;
-            bottom--;
-            bottom += numSkipped;
+        if (cursorPosition < top)
+        {
+            if (wasAtTop)
+            {
+                top = cursorPosition;
+                bottom = top + maxRows - 1;
+            }
         }
+
         update();
+        return true;
     }
     /**
      * Execute a "down press" on menu
      * When edit mode is enabled, this action is skipped
+     * @return 'bool' True if down action performed
      */
-    void down() {
-        //
-        // determine if cursor has passed the end
-        //
+    bool down()
+    {
+
+        uint8_t cursorLine = constrain(cursorPosition - top, 0, maxRows - 1);
+        if (checkAllBelowHidden(cursorPosition))
+        {
+            cursorLine = maxRows - 1;
+        }
+        bool wasAtBottom = cursorLine == maxRows - 1;
+
         int8_t numSkipped = -1;
-        do {
+        do
+        {
             if (isAtTheEnd() || isEditModeEnabled)
             {
-                //update();
-                return;
-            } 
-
+                return false;
+            }
             cursorPosition++;
             numSkipped++;
-        } while(currentMenuTable[cursorPosition]->isHidden());
+        } while (currentMenuTable[cursorPosition]->isHidden());
 
-        
-        //
-        // determine if cursor is at the bottom of the screen
-        //
-        if (cursorPosition > bottom) {
-            //
-            // scroll down once
-            //
-            top++;
-            top -= numSkipped;
-            bottom++;
-            bottom -= numSkipped;
+        if (cursorPosition > bottom)
+        {
+            if (wasAtBottom)
+            {
+                top = cursorPosition - numSkipped - 1;
+                bottom = top + maxRows - 1;
+            }
         }
+
         update();
+        return true;
     }
+
     /**
      * Execute an "enter" action on menu.
      *
@@ -619,94 +662,91 @@ class LcdMenu {
      * - Execute a callback action.
      * - Toggle the state of an item.
      */
-    void enter() {
+    void enter()
+    {
         size_t pos = cursorPosition;
-        MenuItem* item = currentMenuTable[pos];
-
-        /*while(item->isHidden())
-        {
-            pos++;
-            item = currentMenuTable[pos];
-        }*/
+        MenuItem *item = currentMenuTable[pos];
 
         //
         // determine the type of menu entry, then execute it
         //
-        switch (item->getType()) {
-            //
-            // switch the menu to the selected sub menu
-            //
-            case MENU_ITEM_SUB_MENU: {
-                //
-                // check if there is a sub menu
-                //
-                if (item->getSubMenu() == NULL) return;
-                currentMenuTable = item->getSubMenu();
-                currentMenuSize = getMenuSize(currentMenuTable);
-                //
-                // display the sub menu
-                //
-                reset(false);
-                break;
-            }
+        switch (item->getType())
+        {
+        //
+        // switch the menu to the selected sub menu
+        //
+        case MENU_ITEM_SUB_MENU:
+        {
+            enterSubMenu(item);
+            break;
+        }
 #ifdef ItemCommand_H
+        //
+        // execute the menu item's function
+        //
+        case MENU_ITEM_COMMAND:
+        {
             //
             // execute the menu item's function
             //
-            case MENU_ITEM_COMMAND: {
-                //
-                // execute the menu item's function
-                //
-                if (item->getCallback() != NULL) (item->getCallback())();
-                //
-                // display the menu again
-                //
-                update();
-                break;
-            }
+            if (item->getCallback() != NULL)
+                (item->getCallback())();
+            //
+            // display the menu again
+            //
+            update();
+            break;
+        }
 #endif
 #ifdef ItemToggle_H
-            case MENU_ITEM_TOGGLE: {
-                //
-                // toggle the value of isOn
-                //
-                item->setIsOn(!item->isOn());
-                //
-                // execute the menu item's function
-                //
-                if (item->getCallbackInt() != NULL)
-                    (item->getCallbackInt())(item->isOn());
-                //
-                // display the menu again
-                //
-                update();
-                break;
-            }
+        case MENU_ITEM_TOGGLE:
+        {
+            //
+            // toggle the value of isOn
+            //
+            item->setIsOn(!item->isOn());
+            //
+            // execute the menu item's function
+            //
+            if (item->getCallbackInt() != NULL)
+                (item->getCallbackInt())(item->isOn());
+            //
+            // display the menu again
+            //
+            update();
+            break;
+        }
 #endif
 #ifdef ItemInput_H
-            case MENU_ITEM_INPUT: {
-                //
-                // enter editmode
-                //
-                if (!isInEditMode()) {
-                    isEditModeEnabled = true;
-                    // blinker will be drawn
-                    drawCursor();
-                }
-                break;
+        case MENU_ITEM_INPUT:
+        {
+            //
+            // enter editmode
+            //
+            if (!isInEditMode())
+            {
+                isEditModeEnabled = true;
+                // blinker will be drawn
+                drawCursor();
             }
+            break;
+        }
 #endif
-            case MENU_ITEM_PROGRESS:
-            case MENU_ITEM_LIST: {
-                //
-                // execute the menu item's function
-                //
-                if (!isInEditMode()) {
-                    isEditModeEnabled = true;
-                    drawCursor();
-                }
-                break;
+        case MENU_ITEM_PROGRESS:
+        case MENU_ITEM_LIST:
+        {
+            //
+            // execute the menu item's function
+            //
+            if (!isInEditMode())
+            {
+                isEditModeEnabled = true;
+                item->saveProgress();
+
+                drawCursor();
             }
+            break;
+        }
         }
     }
     /**
@@ -714,45 +754,56 @@ class LcdMenu {
      *
      * Navigates up once.
      */
-    void back() {
-        MenuItem* item = currentMenuTable[cursorPosition];
+    void back(bool editCancelled = false)
+    {
+        MenuItem *item = currentMenuTable[cursorPosition];
         //
         // Back action different when on ItemInput
         //
-        if (isInEditMode()) switch (item->getType()) {
+        if (isInEditMode())
+        {
+            switch (item->getType())
+            {
 #ifdef ItemInput_H
-                case MENU_ITEM_INPUT:
-                    // Disable edit mode
-                    isEditModeEnabled = false;
-                    update();
-                    // Execute callback function
-                    if (item->getCallbackStr() != NULL)
-                        (item->getCallbackStr())(item->getValue());
-                    // Interrupt going back to parent menu
-                    return;
+            case MENU_ITEM_INPUT:
+                // Disable edit mode
+                isEditModeEnabled = false;
+                update();
+                // Execute callback function
+                if (item->getCallbackStr() != NULL)
+                    (item->getCallbackStr())(item->getValue());
+                // Interrupt going back to parent menu
+                return;
 #endif
 #if defined(ItemProgress_H) || defined(ItemList_H)
-                case MENU_ITEM_LIST:
-                case MENU_ITEM_PROGRESS:
-                    // Disable edit mode
-                    isEditModeEnabled = false;
-                    update();
-                    // Execute callback function
-                    if (item->getCallbackInt() != NULL)
-                        (item->getCallbackInt())(item->getItemIndex());
-                    // Interrupt going back to parent menu
-                    return;
+            case MENU_ITEM_LIST:
+            case MENU_ITEM_PROGRESS:
+                // Disable edit mode
+                isEditModeEnabled = false;
+
+                if (editCancelled)
+                {
+                    item->restoreProgress();
+                }
+
+                // Execute callback function
+                if (item->getCallbackInt() != NULL)
+                    (item->getCallbackInt())(item->getItemIndex());
+                // Interrupt going back to parent menu
+
+                update();
+                return;
 #endif
-                default:
-                    break;
+            default:
+                break;
             }
+        }
         //
         // check if this is a sub menu, if so go back to its parent
         //
-        if (isSubMenu()) {
-            currentMenuTable = currentMenuTable[0]->getSubMenu();
-            currentMenuSize = getMenuSize(currentMenuTable);
-            reset(true);
+        if (isSubMenu())
+        {
+            leaveSubMenu(currentMenuTable[0]);
         }
     }
     /**
@@ -762,39 +813,47 @@ class LcdMenu {
      *
      * Moves the cursor one step to the left.
      */
-    void left() {
+    void left()
+    {
         //
-        if (isInEditMode() && isCharPickerActive) return;
+        if (isInEditMode() && isCharPickerActive)
+            return;
         //
-        MenuItem* item = currentMenuTable[cursorPosition];
+        MenuItem *item = currentMenuTable[cursorPosition];
         //
         // get the type of the currently displayed menu
         //
 #ifdef ItemList_H
         uint8_t previousIndex = item->getItemIndex();
 #endif
-        switch (item->getType()) {
+        switch (item->getType())
+        {
 #ifdef ItemList_H
-            case MENU_ITEM_LIST: {
-                item->setItemIndex(item->getItemIndex() - 1);
-                if (previousIndex != item->getItemIndex()) update();
-                break;
-            }
+        case MENU_ITEM_LIST:
+        {
+            item->setItemIndex(item->getItemIndex() - 1);
+            if (previousIndex != item->getItemIndex())
+                update();
+            break;
+        }
 #endif
 #ifdef ItemInput_H
-            case MENU_ITEM_INPUT: {
-                blinkerPosition--;
-                resetBlinker();
-                break;
-            }
+        case MENU_ITEM_INPUT:
+        {
+            blinkerPosition--;
+            resetBlinker();
+            break;
+        }
 #endif
 #ifdef ItemProgress_H
-            case MENU_ITEM_PROGRESS: {
-                if (isInEditMode()) {
-                    item->decrement();
-                    update();
-                }
+        case MENU_ITEM_PROGRESS:
+        {
+            if (isInEditMode())
+            {
+                item->decrement();
+                update();
             }
+        }
 #endif
         }
     }
@@ -805,41 +864,48 @@ class LcdMenu {
      *
      * Moves the cursor one step to the right.
      */
-    void right() {
+    void right()
+    {
         //
         // Is the menu in edit mode and is the character picker active?
         //
-        if (isInEditMode() && isCharPickerActive) return;
+        if (isInEditMode() && isCharPickerActive)
+            return;
         //
-        MenuItem* item = currentMenuTable[cursorPosition];
+        MenuItem *item = currentMenuTable[cursorPosition];
         //
         // get the type of the currently displayed menu
         //
-        switch (item->getType()) {
+        switch (item->getType())
+        {
 #ifdef ItemList_H
-            case MENU_ITEM_LIST: {
-                item->setItemIndex((item->getItemIndex() + 1) %
-                                   item->getItemCount());
-                // constrain(item->itemIndex + 1, 0, item->itemCount - 1);
-                update();
-                break;
-            }
+        case MENU_ITEM_LIST:
+        {
+            item->setItemIndex((item->getItemIndex() + 1) %
+                               item->getItemCount());
+            // constrain(item->itemIndex + 1, 0, item->itemCount - 1);
+            update();
+            break;
+        }
 #endif
 #ifdef ItemInput_H
-            case MENU_ITEM_INPUT: {
-                blinkerPosition++;
-                resetBlinker();
-                break;
-            }
+        case MENU_ITEM_INPUT:
+        {
+            blinkerPosition++;
+            resetBlinker();
+            break;
+        }
 #endif
 #ifdef ItemProgress_H
-            case MENU_ITEM_PROGRESS: {
-                if (isInEditMode()) {
-                    item->increment();
-                    update();
-                }
-                break;
+        case MENU_ITEM_PROGRESS:
+        {
+            if (isInEditMode())
+            {
+                item->increment();
+                update();
             }
+            break;
+        }
 #endif
         }
     }
@@ -851,10 +917,12 @@ class LcdMenu {
      *
      * Removes the character at the current cursor position.
      */
-    void backspace() {
-        MenuItem* item = currentMenuTable[cursorPosition];
+    void backspace()
+    {
+        MenuItem *item = currentMenuTable[cursorPosition];
         //
-        if (item->getType() != MENU_ITEM_INPUT) return;
+        if (item->getType() != MENU_ITEM_INPUT)
+            return;
         //
         uint8_t p = blinkerPosition - (strlen(item->getText()) + 2) - 1;
         remove(item->getValue(), p, 1);
@@ -867,10 +935,12 @@ class LcdMenu {
      * used for `Input` type menu items
      * @param character character to append
      */
-    void type(char character) {
-        MenuItem* item = currentMenuTable[cursorPosition];
+    void type(char character)
+    {
+        MenuItem *item = currentMenuTable[cursorPosition];
         //
-        if (item->getType() != MENU_ITEM_INPUT || !isEditModeEnabled) return;
+        if (item->getType() != MENU_ITEM_INPUT || !isEditModeEnabled)
+            return;
         //
         // calculate lower and upper bound
         //
@@ -881,16 +951,19 @@ class LcdMenu {
         //
         // update text
         //
-        if (blinkerPosition < ub) {
+        if (blinkerPosition < ub)
+        {
             static char start[10];
             static char end[10];
-            static char* joined = new char[maxCols - lb];
+            static char *joined = new char[maxCols - lb];
             substring(item->getValue(), 0, blinkerPosition - lb, start);
             substring(item->getValue(), blinkerPosition + 1 - lb, length, end);
             concat(start, character, end, joined);
             item->setValue(joined);
-        } else {
-            static char* buf = new char[length + 2];
+        }
+        else
+        {
+            static char *buf = new char[length + 2];
             concat(item->getValue(), character, buf);
             item->setValue(buf);
         }
@@ -910,10 +983,12 @@ class LcdMenu {
      * used for `Input` type menu items.
      * @param c character to draw
      */
-    void drawChar(char c) {
-        MenuItem* item = currentMenuTable[cursorPosition];
+    void drawChar(char c)
+    {
+        MenuItem *item = currentMenuTable[cursorPosition];
         //
-        if (item->getType() != MENU_ITEM_INPUT || !isEditModeEnabled) return;
+        if (item->getType() != MENU_ITEM_INPUT || !isEditModeEnabled)
+            return;
         //
         // draw the character without updating the menu item
         //
@@ -927,14 +1002,16 @@ class LcdMenu {
     /**
      * Clear the value of the input field
      */
-    void clear() {
-        MenuItem* item = currentMenuTable[cursorPosition];
+    void clear()
+    {
+        MenuItem *item = currentMenuTable[cursorPosition];
         //
-        if (item->getType() != MENU_ITEM_INPUT) return;
+        if (item->getType() != MENU_ITEM_INPUT)
+            return;
         //
         // set the value
         //
-        item->setValue((char*)"");
+        item->setValue((char *)"");
         //
         // update blinker position
         //
@@ -950,7 +1027,8 @@ class LcdMenu {
      * @param newIcon character to use for default cursor
      * @param newEditIcon character use for edit mode cursor
      */
-    void setCursorIcon(uint8_t newIcon, uint8_t newEditIcon) {
+    void setCursorIcon(uint8_t newIcon, uint8_t newEditIcon)
+    {
         cursorIcon = newIcon;
         editCursorIcon = newEditIcon;
         drawCursor();
@@ -960,14 +1038,16 @@ class LcdMenu {
      * call this function then display your content, later call
      * `show()` to show the menu
      */
-    void hide() {
+    void hide()
+    {
         enableUpdate = false;
         lcd->clear();
     }
     /**
      * Show the menu
      */
-    void show() {
+    void show()
+    {
         enableUpdate = true;
         update();
     }
@@ -985,14 +1065,17 @@ class LcdMenu {
      * Set the current cursor position
      * @param position
      */
-    void setCursorPosition(uint8_t position) {
+    void setCursorPosition(uint8_t position)
+    {
         this->cursorPosition = position;
     }
     /**
      * Update timer and turn off display on timeout
      */
-    void updateTimer() {
-        if (millis() == startTime + timeout) {
+    void updateTimer()
+    {
+        if (millis() == startTime + timeout)
+        {
             lcd->noDisplay();
             lcd->noBacklight();
         }
@@ -1000,7 +1083,8 @@ class LcdMenu {
     /**
      * Check if currently displayed menu is a sub menu.
      */
-    bool isSubMenu() {
+    bool isSubMenu()
+    {
         byte menuItemType = currentMenuTable[0]->getType();
         return menuItemType == MENU_ITEM_SUB_MENU_HEADER;
     }
@@ -1009,7 +1093,7 @@ class LcdMenu {
     {
         size_t s = 0;
 
-        while(menu[s]->getType() != MENU_ITEM_END_OF_MENU)
+        while (menu[s]->getType() != MENU_ITEM_END_OF_MENU)
         {
             s++;
         }
@@ -1021,7 +1105,7 @@ class LcdMenu {
      * Get a `MenuItem` at position
      * @return `MenuItem` - item at `position`
      */
-    MenuItem* getItemAt(uint8_t position) { return currentMenuTable[position]; }
+    MenuItem *getItemAt(uint8_t position) { return currentMenuTable[position]; }
     /**
      * Get a `MenuItem` at position using operator function
      * e.g `menu[menu.getCursorPosition()]` will return the item at the
@@ -1030,14 +1114,16 @@ class LcdMenu {
      * the current menu)
      * @return `MenuItem` - item at `position`
      */
-    MenuItem* operator[](const uint8_t position) {
+    MenuItem *operator[](const uint8_t position)
+    {
         return currentMenuTable[position];
     }
     /**
      * Set the Backlight state
      * @param state
      */
-    void setBacklight(uint8_t state) {
+    void setBacklight(uint8_t state)
+    {
         backlightState = state;
         update();
     }

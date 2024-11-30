@@ -32,15 +32,20 @@
 /**
  * The MenuItem class
  */
-class MenuItem {
-   protected:
-    const char* text = NULL;
+class MenuItem
+{
+protected:
+    const char *text = NULL;
     byte type = MENU_ITEM_NONE;
     bool hidden = false;
 
-   public:
-    MenuItem(const char* text) : text(text) {}
-    MenuItem(const char* text, byte type) : text(text), type(type) {}
+    /*uint8_t subMenuCursor = 1;
+    uint8_t subMenuTop = 0;
+    uint8_t subMenuBottom = 0;*/
+
+public:
+    MenuItem(const char *text) : text(text) {}
+    MenuItem(const char *text, byte type) : text(text), type(type) {}
     /**
      * ## Getters
      */
@@ -52,12 +57,12 @@ class MenuItem {
     /**
      * String value of an `ItemInput`
      */
-    virtual char* getValue() { return NULL; }
+    virtual char *getValue() { return NULL; }
     /**
      * Get the text of the item
      * @return `String` - Item's text
      */
-    virtual const char* getText() { return text; }
+    virtual const char *getText() { return text; }
     /**
      * Get the callback of the item
      * @return `ftpr` - Item's callback
@@ -77,7 +82,7 @@ class MenuItem {
      * Get the sub menu at item
      * @return `MenuItem*` - Submenu at item
      */
-    virtual MenuItem** getSubMenu() { return NULL; }
+    virtual MenuItem **getSubMenu() { return NULL; }
     /**
      * Get the type of the item
      * @return `byte` - type of menu item
@@ -87,16 +92,21 @@ class MenuItem {
      * Get the text when toggle is ON
      * @return `String` - ON text
      */
-    virtual const char* getTextOn() { return NULL; }
+    virtual const char *getTextOn() { return NULL; }
     /**
      * Get the text when toggle is OFF
      * @return `String` - OFF text
      */
-    virtual const char* getTextOff() { return NULL; }
+    virtual const char *getTextOff() { return NULL; }
     /**
      * Current index of list for `ItemList`
      */
     virtual uint16_t getItemIndex() { return 0; }
+    /**
+     * Restore value that was saved in saveProgress method
+     * Used when edit is cancelled
+    */
+   virtual void restoreProgress() {}
     /**
      * Number of items in the list for `ItemList`
      */
@@ -105,7 +115,7 @@ class MenuItem {
      * Get the list of items
      * @return `String*` - List of items
      */
-    virtual String* getItems() { return NULL; }
+    virtual String *getItems() { return NULL; }
     /**
      * @brief Increments the progress of the list.
      */
@@ -123,14 +133,23 @@ class MenuItem {
      */
     virtual void setIsOn(boolean isOn){};
     /**
+     * Set progress in ItemProgress
+     * @param progress progress value to set
+     */
+    virtual void setProgress(uint16_t progress){};
+    /**
+     * Save progress before editing.
+    */
+    virtual void saveProgress(){};
+    /**
      * String value of an `ItemInput`
      */
-    virtual void setValue(char* value){};
+    virtual void setValue(char *value){};
     /**
      * Set the text of the item
      * @param text text to display for the item
      */
-    void setText(const char* text){};
+    void setText(const char *text){};
     /**
      * Set the callback on the item
      * @param callback reference to callback function
@@ -149,11 +168,19 @@ class MenuItem {
      * Get item at index from the submenu
      * @param index for the item
      */
-    MenuItem& operator[](const uint8_t index);
+    MenuItem &operator[](const uint8_t index);
 
     bool isHidden() const { return hidden; }
     void hide() { hidden = true; }
     void show() { hidden = false; }
+
+    virtual uint8_t getTop() const { return 0; }
+    virtual uint8_t getBottom() const { return 0; }
+    virtual uint8_t getCursorPosition() const { return 0; }
+
+    virtual void setTop(uint8_t top) {}
+    virtual void setBottom(uint8_t bottom) {}
+    virtual void setCursorPosition(uint8_t cursorPosition) {}
 };
 #define ITEM_BASIC(...) (new MenuItem(__VA_ARGS__))
 
@@ -174,24 +201,55 @@ class MenuItem {
  * ```
  */
 
-class ItemHeader : public MenuItem {
-   protected:
-    MenuItem** parent = NULL;
+class ItemHeader : public MenuItem
+{
+protected:
+    MenuItem **parent = NULL;
 
-    ItemHeader(const char* text, MenuItem** parent, byte type)
+    uint8_t top;
+    uint8_t bottom;
+    uint8_t cursorPosition;
+
+    ItemHeader(const char *text, MenuItem **parent, byte type)
         : MenuItem(text, type), parent(parent) {}
 
-   public:
+public:
     /**
      */
     ItemHeader() : ItemHeader("", NULL, MENU_ITEM_MAIN_MENU_HEADER) {}
     /**
      * @param parent the parent menu item
      */
-    ItemHeader(MenuItem** parent)
+    ItemHeader(MenuItem **parent)
         : ItemHeader("", parent, MENU_ITEM_SUB_MENU_HEADER) {}
 
-    MenuItem** getSubMenu() override { return this->parent; };
+    MenuItem **getSubMenu() override { return this->parent; };
+
+    uint8_t getTop() const override
+    {
+        return top;
+    }
+    uint8_t getBottom() const override
+    {
+        return bottom;
+    }
+    uint8_t getCursorPosition() const override
+    {
+        return cursorPosition;
+    }
+
+    void setTop(uint8_t screenTop) override
+    {
+        top = screenTop;
+    }
+    void setBottom(uint8_t screenBottom) override
+    {
+        bottom = screenBottom;
+    }
+    void setCursorPosition(uint8_t currentCursorPosition) override
+    {
+        cursorPosition = currentCursorPosition;
+    }
 };
 
 /**
@@ -212,19 +270,20 @@ class ItemHeader : public MenuItem {
  * ```
  */
 
-class ItemFooter : public MenuItem {
-   public:
+class ItemFooter : public MenuItem
+{
+public:
     /**
      */
     ItemFooter() : MenuItem(NULL, MENU_ITEM_END_OF_MENU) {}
 };
 
 #define MAIN_MENU(...)           \
-    extern MenuItem* mainMenu[]; \
-    MenuItem* mainMenu[] = {new ItemHeader(), __VA_ARGS__, new ItemFooter()}
+    extern MenuItem *mainMenu[]; \
+    MenuItem *mainMenu[] = {new ItemHeader(), __VA_ARGS__, new ItemFooter()}
 
 #define SUB_MENU(subMenu, parent, ...)                          \
-    MenuItem* subMenu[] = {new ItemHeader(parent), __VA_ARGS__, \
+    MenuItem *subMenu[] = {new ItemHeader(parent), __VA_ARGS__, \
                            new ItemFooter()}
 
 #endif

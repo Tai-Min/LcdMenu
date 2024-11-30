@@ -27,14 +27,16 @@
 #define ItemList_H
 #include "MenuItem.h"
 
-class ItemList : public MenuItem {
-   private:
-    fptrInt callback = NULL;  ///< Pointer to a callback function
-    String* items = NULL;     ///< Pointer to an array of items
-    const uint8_t itemCount;  ///< The total number of items in the list
-    uint16_t itemIndex = 0;   ///< The current selected item index
-
-   public:
+class ItemList : public MenuItem
+{
+private:
+    fptrInt callback = NULL; ///< Pointer to a callback function
+    fptrInt changeCallback = NULL;
+    String *items = NULL;          ///< Pointer to an array of items
+    const uint8_t itemCount;       ///< The total number of items in the list
+    uint16_t itemIndex = 0;        ///< The current selected item index
+    uint16_t initialItemIndex = 0; ///< Initial index, before edit starts
+public:
     /**
      * @brief Constructs a new ItemList object.
      *
@@ -44,10 +46,20 @@ class ItemList : public MenuItem {
      * @param callback A pointer to the callback function to execute when
      * this menu item is selected.
      */
-    ItemList(const char* key, String* items, const uint8_t itemCount,
+    ItemList(const char *key, String *items, const uint8_t itemCount,
              fptrInt callback)
-        : MenuItem(key, MENU_ITEM_LIST), itemCount(itemCount) {
+        : MenuItem(key, MENU_ITEM_LIST), itemCount(itemCount)
+    {
         this->callback = callback;
+        this->items = items;
+    }
+
+    ItemList(const char *key, String *items, const uint8_t itemCount,
+             fptrInt changeCallback, fptrInt callback)
+        : MenuItem(key, MENU_ITEM_LIST), itemCount(itemCount)
+    {
+        this->callback = callback;
+        this->changeCallback = changeCallback;
         this->items = items;
     }
 
@@ -56,15 +68,29 @@ class ItemList : public MenuItem {
      *
      * @return The index of the currently selected item.
      */
-    uint16_t getItemIndex() override { return itemIndex; }
+    uint16_t getItemIndex() override
+    {
+        return itemIndex;
+    }
+
+    void restoreProgress()
+    {
+        itemIndex = initialItemIndex;
+    }
 
     /**
      * @brief Changes the index of the current item.
      *
      * @return The index of the item to be selected.
      */
-    void setItemIndex(uint16_t itemIndex) override {
+    void setItemIndex(uint16_t itemIndex) override
+    {
         this->itemIndex = constrain(itemIndex, 0, itemCount - 1);
+
+        if (this->changeCallback)
+        {
+            this->changeCallback(this->itemIndex);
+        }
     }
 
     /**
@@ -86,7 +112,9 @@ class ItemList : public MenuItem {
      *
      * @return A pointer to the array of items.
      */
-    String* getItems() override { return items; }
+    String *getItems() override { return items; }
+
+    void saveProgress() { initialItemIndex = itemIndex; }
 };
 
 #define ITEM_STRING_LIST(...) (new ItemList(__VA_ARGS__))
